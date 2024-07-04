@@ -1,5 +1,3 @@
-using System.Threading;
-
 class Schedule {
     private Elevator[] ele;
     private RequestQueue queue;

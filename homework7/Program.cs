@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-
-class Homework7 {
+﻿class Homework7 {
     public static DateTime beginTime;
     public static Schedule? schedule;
     public static Input? input;
