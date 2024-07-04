@@ -14,73 +14,60 @@ class Elevator {
         high = 11;
         single = true;
         Id = id;
+        count = 0;
     }
-    public int getId() {
-        return Id;
-    }
-    public bool getSingle() {
-        return single;
-    }
-    public void setSingle(bool single) {
-        this.single = single;
-    }
+    public int getCount() { return count; }
+    public int getId() { return Id; }
+    public bool getSingle() { return single; }
+    public void setSingle(bool single) { this.single = single; }
 
-    public int getLow() {
-        return low;
-    }
-    public void setLow(int low) {
-        this.low = low;
-    }
-    public int getHigh() {
-        return high;
-    }
-    public void setHigh(int high) {
-        this.high = high;
-    }
+    public int getLow() { return low; }
+    public void setLow(int low) { this.low = low; }
+    public int getHigh() { return high; }
+    public void setHigh(int high) { this.high = high; }
 
-    public void add(PersonRequest pr) {
-        queue.add(pr);
-    }
-    public PersonRequest? getFirst() {
-        return queue.getFirst();
-    }
-    public void setStop(bool _stop) {
-        queue.setStop(_stop);
-    }
-    public bool getStop() {
-        return queue.getStop();
-    }
-    public int getDirection() {
-        return direction;
-    }
-    public int getCurFloor() {
-        return curFloor;
-    }
-    public void setCurFloor(int curFloor) {
-        this.curFloor = curFloor;
-    }
-    public void setMoveTime(int moveTime) {
-        this.moveTime = moveTime;
-    }
-    public int getMoveTime() {
-        return moveTime;
-    }
-    public void setFullPerson(int fullPerson) {
-        this.fullPerson = fullPerson;
-    }
-    public int getFullPerson() {
-        return fullPerson;
-    }
-    public PersonRequest? getPr() {
-        return pr;
-    }
+    public void add(PersonRequest pr) { queue.add(pr); }
+    public PersonRequest? getFirst() { return queue.getFirst(); }
+    public void setStop(bool _stop) { queue.setStop(_stop); }
+    public bool getStop() { return queue.getStop(); }
+    public int getDirection() { return direction; }
+    public int getCurFloor() { return curFloor; }
+    public void setCurFloor(int curFloor) { this.curFloor = curFloor; }
+    public void setMoveTime(int moveTime) { this.moveTime = moveTime; }
+    public int getMoveTime() { return moveTime; }
+    public void setFullPerson(int fullPerson) { this.fullPerson = fullPerson; }
+    public int getFullPerson() { return fullPerson; }
+    public PersonRequest? getPr() { return pr; }
     public void run() {
         while(!(queue.IsEmpty() && queue.getStop())) {
             pr = queue.getFirst();
             if(pr != null && Homework7.schedule != null) {
                 if(pr.getC() > 0) {
                     var eq = new PriorityQueue<PersonRequest, PersonRequestComparator>();
-                    Move(pr, pr.getFromFloor());
+                    // Console.WriteLine("newpr - BEGIN "+pr.getFromFloor()+" "+pr.getToFloor()+" "+curFloor);
+                    int flag2 = Move(pr, pr.getFromFloor());
+                    if(flag2 == 3) {
+                        PersonRequest? reset_pr = null;
+                        foreach(PersonRequest request in queue.getRequests()) {
+                            if(request.getC() <= 0 && request.getElevatorId() == getId()) {
+                                reset_pr = request;
+                                queue.Remove(request);
+                                break;
+                            }
+                        }
+                        Reset(reset_pr);
+                        PersonRequest temp_pr = pr;
+                        int elevator = Homework7.schedule.reveive(pr);
+                        pr.setElevatorId(elevator);
+                        Homework7.schedule.eleAdd(elevator, pr);
+                        foreach(PersonRequest pr2 in queue.getRequests()) {
+                            if(pr2.Equals(temp_pr)) continue;
+                            elevator = Homework7.schedule.reveive(pr2);
+                            pr2.setElevatorId(elevator);
+                            Homework7.schedule.eleAdd(elevator, pr2);
+                        }
+                        continue;
+                    }
                     Open(pr);
                     In(pr);
                     count ++;
@@ -94,11 +81,13 @@ class Elevator {
                         count ++;
                     }
                     Close(pr);
+                    // Console.WriteLine("END");
 
                     while(eq.Count != 0) {
                         PersonRequest? tmp = eq.Dequeue();
                         int flag = Move(tmp, tmp.getToFloor());
                         if(flag == 0) {
+                            // Console.WriteLine("flag==0 - BEGIN");
                             Open(tmp);
                             Out(tmp);
                             count --;
@@ -107,14 +96,17 @@ class Elevator {
                                 count --;
                             }
                             Close(tmp);
+                            // Console.WriteLine("flag==0 - END");
                         } else if(flag == 1) {
+                            // Console.WriteLine("flag==1");
                             OpenOutClose(tmp);
                             Move(tmp, getLow()+1);
                         } else if(flag == 2) {
+                            // Console.WriteLine("flag==2");
                             OpenOutClose(tmp);
                             Move(tmp, getHigh()-1);
                         } else if(flag == 3) {
-                            // Console.WriteLine("DEBUG!");
+                            // Console.WriteLine("flag==3");
                             PersonRequest? reset_pr = null;
                             foreach(PersonRequest request in queue.getRequests()) {
                                 if(request.getC() <= 0 && request.getElevatorId() == getId()) {
@@ -126,15 +118,16 @@ class Elevator {
                             Open(tmp);
                             Out(tmp);
                             Close(tmp);
+                            int temp_curFloor = curFloor;
                             Reset(reset_pr);
-                            PersonRequest neq2 = new(1, curFloor, tmp.getToFloor(), tmp.getPersonId(), -1, tmp.getTimeStamp());
+                            PersonRequest neq2 = new(1, temp_curFloor, tmp.getToFloor(), tmp.getPersonId(), -1, tmp.getTimeStamp());
                             int elevator = Homework7.schedule.reveive(neq2);
                             neq2.setElevatorId(elevator);
                             // Console.WriteLine("DEBUG"+elevator);
                             Homework7.schedule.eleAdd(elevator, neq2);
                             while(eq.Count != 0) {
                                 PersonRequest neq = eq.Dequeue();
-                                neq2 = new(1, curFloor, neq.getToFloor(), neq.getPersonId(), -1, neq.getTimeStamp());
+                                neq2 = new(1, temp_curFloor, neq.getToFloor(), neq.getPersonId(), -1, neq.getTimeStamp());
                                 // queue.add(neq2);
                                 elevator = Homework7.schedule.reveive(neq2);
                                 neq2.setElevatorId(elevator);
@@ -296,7 +289,8 @@ class Elevator {
         }
         Console.WriteLine(close_string);   
     }
-    private void Reset(PersonRequest pr) {
+    private void Reset(PersonRequest? pr) {
+        if(pr == null) return ;
         TimeSpan oTime;
         if(pr.getD() < 0) {
             oTime = DateTime.Now.Subtract(Homework7.beginTime);
