@@ -1,24 +1,25 @@
+using System.Collections.Concurrent;
+
 class RequestQueue {
-    private List<PersonRequest> requests;
+    private ConcurrentQueue<PersonRequest> requests;
     private bool stop;
     public RequestQueue() {
-        requests = [];
+        requests = new ConcurrentQueue<PersonRequest>();
         stop = false;
     }
-    public List<PersonRequest> getRequests() {
+    public ConcurrentQueue<PersonRequest> getRequests() {
         return requests;
     }
     public void add(PersonRequest pr) {
-        requests.Add(pr);
+        requests.Enqueue(pr);
     }
     public PersonRequest? getFirst() {
-        if(requests.Count > 0) {
-            PersonRequest pr = requests[0];
-            requests.RemoveAt(0);
-            return pr;
-        } else {
-            return null;
-        }
+        if(requests.TryDequeue(out PersonRequest? request))
+            return request;
+        return null;
+    }
+    public bool IsEmpty() {
+        return requests.IsEmpty;
     }
     public void setStop(bool _stop) {
         stop = _stop;
@@ -26,20 +27,45 @@ class RequestQueue {
     public bool getStop() {
         return stop;
     }
-    public bool IsEmpty() {
-        if(requests.Count == 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
     public PersonRequest? hasEqualFrom(PersonRequest pr_o) {
-        foreach(PersonRequest pr in requests) {
-            if(pr.getC()>0 && pr.getFromFloor() == pr_o.getFromFloor()) {
-                requests.Remove(pr);
-                return pr;
+        PersonRequest? foundRequest = null;
+        var tempQueue = new ConcurrentQueue<PersonRequest>();
+        while(requests.TryDequeue(out PersonRequest? pr)) {
+            if(foundRequest == null && pr.getC() > 0 && pr.getFromFloor() == pr_o.getFromFloor()) {
+                foundRequest = pr;
+                continue;
+            }
+            tempQueue.Enqueue(pr);
+        }
+        while(tempQueue.TryDequeue(out PersonRequest? item)) {
+            requests.Enqueue(item);
+        }
+        return foundRequest;
+    }
+    public PersonRequest? getCLessZero() {
+        PersonRequest? foundRequest = null;
+        var tempQueue = new ConcurrentQueue<PersonRequest>();
+        while(requests.TryDequeue(out PersonRequest? pr)) {
+            if(foundRequest == null && pr.getC() < 0) {
+                foundRequest = pr;
+                continue;
+            }
+            tempQueue.Enqueue(pr);
+        }
+        while(tempQueue.TryDequeue(out PersonRequest? item)) {
+            requests.Enqueue(item);
+        }
+        return foundRequest;        
+    }
+    public void Remove(PersonRequest item) {
+        var tempQueue = new Queue<PersonRequest>();
+        while(requests.TryDequeue(out PersonRequest? currentItem)) {
+            if(!currentItem.Equals(item)) {
+                tempQueue.Enqueue(currentItem);
             }
         }
-        return null;
+        while(tempQueue.Count > 0) {
+            requests.Enqueue(tempQueue.Dequeue());
+        }
     }
 }
