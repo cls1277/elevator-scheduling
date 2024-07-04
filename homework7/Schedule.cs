@@ -17,14 +17,23 @@ class Schedule {
 
     public int reveive(PersonRequest pr) {
         int elevator = 0;
+        int count_min = 127;
         for(int i=1; i<=6; i++) {
-            if(ele[i].getSingle() == true) {
+            if(ele[i].getSingle() == true && ele[i].queue.getRequests().Count < count_min) {
                 elevator = i;
-                break;
+                count_min = ele[i].queue.getRequests().Count;
+                // break;
             }
         }
         if(elevator == 0) {
-            elevator = new Random().Next(1, 13);
+            List<int> eles = new();
+            for(int i=1; i<=12; i++) {
+                if(ele[i].getLow() <= pr.getFromFloor() && ele[i].getHigh() >= pr.getFromFloor()) {
+                    eles.Add(i);
+                }
+            }
+            Random random = new();
+            elevator = eles[random.Next(eles.Count)];
         }
         TimeSpan oTime = DateTime.Now.Subtract(Homework7.beginTime);
         string receive_string = "["+oTime.TotalSeconds+"]RECEIVE-"+pr.getPersonId();
