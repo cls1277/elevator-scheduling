@@ -124,25 +124,6 @@ class Elevator {
             }
         }
     }
-    private void OpenOutClose(PersonRequest tmp) {
-        if(Homework6.schedule == null) return ;
-        Open(tmp);
-        Out(tmp);
-        int elevator = Homework6.schedule.reveive(tmp);
-        PersonRequest npr = new(1, curFloor, tmp.getToFloor(), tmp.getPersonId(), 0);
-        npr.setElevatorId(elevator);
-        Homework6.schedule.eleAdd(elevator, npr);
-
-        foreach(PersonRequest request in queue.getRequests()) {
-            Out(request);
-            // elevator = Homework6.schedule.reveive(request);
-            npr = new PersonRequest(1, curFloor, request.getToFloor(), request.getPersonId(), request.getTimeStamp());
-            elevator = Homework6.schedule.reveive(npr);
-            npr.setElevatorId(elevator);
-            Homework6.schedule.eleAdd(elevator, npr);
-        }
-        Close(tmp);
-    }
 
     private void ChangeDir(int floor) {
         if(floor > curFloor) {
