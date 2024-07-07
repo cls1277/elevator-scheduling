@@ -1,6 +1,6 @@
 class Elevator {
     public RequestQueue queue;
-    private int curFloor, count, fullPerson, moveTime;
+    private int curFloor, count, fullPerson, moveTime, direction;
     private PersonRequest? pr;
     public Elevator() {
         curFloor = 1;
@@ -8,6 +8,7 @@ class Elevator {
         fullPerson = 6;
         moveTime = 400;
         count = 0;
+        direction = 1; // up
     }
     public void add(PersonRequest pr) { queue.add(pr); }
     public void setStop(bool _stop) { queue.setStop(_stop); }
@@ -19,57 +20,84 @@ class Elevator {
             pr = queue.getFirst();
             if(pr != null && Homework5.schedule != null) {
                 var eq = new PriorityQueue<PersonRequest, PersonRequestComparator>();
-                Move(pr, pr.getFromFloor());
+                Move(pr, pr.getFromFloor(), eq, 1); // in
                 Open(pr);
                 In(pr);
                 count ++;
                 eq.Enqueue(pr, new PersonRequestComparator());
-                while(count+1 <= getFullPerson()) {
-                    PersonRequest? tmp = queue.hasEqualFrom(pr);
-                    if(tmp==null) break;
-                    In(tmp);
-                    eq.Enqueue(tmp, new PersonRequestComparator());
-                    count ++;
-                }
                 Close(pr);
 
                 while(eq.Count != 0) {
                     PersonRequest? tmp = eq.Dequeue();
-                    Move(tmp, tmp.getToFloor());
+                    Move(tmp, tmp.getToFloor(), eq, -1); // out
                     Open(tmp);
                     Out(tmp);
-                    count --;
-                    while(eq.Count!=0 && eq.Peek().getToFloor() == tmp.getToFloor()) {
-                        Out(eq.Dequeue());
-                        count --;
-                    }
                     Close(tmp);
-                    count = 0;
-                    break;
+                    count --;
                 }
             }
         }
     }
 
-    private void Arrive(PersonRequest pr) {
+    private void Arrive(PersonRequest pr, PriorityQueue<PersonRequest, PersonRequestComparator> eq, int inORout) {
         TimeSpan oTime = DateTime.Now.Subtract(Homework5.beginTime);
         string arrive_string = "["+oTime.TotalSeconds+"]ARRIVE-"+curFloor;
         arrive_string += "-"+pr.getElevatorId();
         Console.WriteLine(arrive_string);
+        // if(inORout == 1) { // in
+            List<PersonRequest> tmps = queue.getEqualFromDirection(pr.getElevatorId(), curFloor, direction);
+            if(tmps.Count > 0) Open(pr);
+            for(int i=0; i<tmps.Count; i++) {
+                PersonRequest tmp = tmps[i];
+                In(tmp);
+                eq.Enqueue(tmp, new PersonRequestComparator());
+                count ++;
+                if(count == fullPerson) {
+                    for(int j=i+1; j<tmps.Count; j++) {
+                        queue.add(tmps[j]);
+                    }
+                    break;
+                }
+            }
+            if(tmps.Count > 0) Close(pr);
+        // } else if(inORout == -1) { // out
+            List<PersonRequest> eq2 = [], temp_eq2 = [];
+            while(eq.Count > 0) {
+                eq2.Add(eq.Peek());
+                temp_eq2.Add(eq.Dequeue());
+            }
+            bool isOpen = false;
+            foreach(PersonRequest item in eq2) {
+                if(curFloor == item.getToFloor()) {
+                    if(!isOpen) {
+                        Open(pr);
+                        isOpen = true;
+                    }
+                    Out(item);
+                    temp_eq2.Remove(item);
+                    count --;
+                }
+            }
+            if(isOpen) Close(pr);
+            foreach(PersonRequest request in temp_eq2) {
+                eq.Enqueue(request, new PersonRequestComparator());
+            }
+        // }
     }
-
-    private void Move(PersonRequest pr, int floor) {
+    private void Move(PersonRequest pr, int floor, PriorityQueue<PersonRequest, PersonRequestComparator> eq, int inORout) {
         if(floor < curFloor) {
+            direction = -1;
             while(curFloor > floor) {
                 curFloor --;
                 Thread.Sleep(getMoveTime());
-                Arrive(pr);
+                Arrive(pr, eq, inORout);
             }
         } else {
+            direction = 1;
             while(curFloor < floor) {
                 curFloor ++;
                 Thread.Sleep(getMoveTime());
-                Arrive(pr);
+                Arrive(pr, eq, inORout);
             }
         }
     }

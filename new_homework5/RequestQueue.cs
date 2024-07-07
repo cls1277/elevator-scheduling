@@ -27,12 +27,30 @@ class RequestQueue {
     public bool getStop() {
         return stop;
     }
-    public PersonRequest? hasEqualFrom(PersonRequest pr_o) {
-        PersonRequest? foundRequest = null;
+    public List<PersonRequest> getEqualFromDirection(int elevatorId, int curFloor, int direction) {
+        List<PersonRequest> foundRequest = [];
         var tempQueue = new ConcurrentQueue<PersonRequest>();
         while(requests.TryDequeue(out PersonRequest? pr)) {
-            if(foundRequest == null && pr.getC() > 0 && pr.getFromFloor() == pr_o.getFromFloor()) {
-                foundRequest = pr;
+            if(pr.getC() > 0) {
+                int now_direction = pr.getFromFloor()<pr.getToFloor()?1:-1;
+                if(pr.getFromFloor() == curFloor && now_direction == direction && elevatorId == pr.getElevatorId()) {
+                    foundRequest.Add(pr);
+                    continue;
+                }
+            }
+            tempQueue.Enqueue(pr);
+        }
+        while(tempQueue.TryDequeue(out PersonRequest? item)) {
+            requests.Enqueue(item);
+        }
+        return foundRequest;        
+    }
+    public List<PersonRequest> hasEqualFrom(PersonRequest pr_o) {
+        List<PersonRequest> foundRequest = [];
+        var tempQueue = new ConcurrentQueue<PersonRequest>();
+        while(requests.TryDequeue(out PersonRequest? pr)) {
+            if(pr.getC() > 0 && pr.getFromFloor() == pr_o.getFromFloor()) {
+                foundRequest.Add(pr);
                 continue;
             }
             tempQueue.Enqueue(pr);

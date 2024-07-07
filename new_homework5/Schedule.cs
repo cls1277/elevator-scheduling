@@ -32,10 +32,6 @@ class Schedule {
                 double timeDifference = pr.getTimeStamp() - timeElapsed.TotalSeconds;
                 if(timeDifference <= 0) {
                     ele[pr.getElevatorId()].add(pr);
-                    PersonRequest? tmp;
-                    while ((tmp = queue.hasEqualFrom(pr)) != null) {
-                        ele[pr.getElevatorId()].add(tmp);
-                    }
                     flag = false;
                     pr = null;
                 } else {
